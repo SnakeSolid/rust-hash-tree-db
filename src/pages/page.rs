@@ -19,6 +19,7 @@ where
     K: Ord + Clone + Debug,
     V: Debug,
 {
+    #[cfg(test)]
     pub fn from_range(range_start: K, range_end: K) -> Page<K, V> {
         Page {
             range_start,
@@ -37,10 +38,6 @@ where
 
     pub fn range_start(&self) -> &K {
         &self.range_start
-    }
-
-    pub fn set_range_start(&mut self, range_start: K) {
-        self.range_start = range_start;
     }
 
     pub fn range_end(&self) -> &K {
@@ -118,17 +115,6 @@ mod tests {
         assert_eq!(10, *page.range_start());
         assert_eq!(10, *page.range_end());
         assert_eq!(Some(&20), page.get(&10));
-    }
-
-    #[test]
-    fn must_change_start_range() {
-        let mut page: Page<_, usize> = Page::from_range(10, 20);
-
-        assert_eq!(10, *page.range_start());
-
-        page.set_range_start(15);
-
-        assert_eq!(15, *page.range_start());
     }
 
     #[test]
@@ -227,5 +213,30 @@ mod tests {
         assert_eq!(2, page.size());
         page.insert(15, 150);
         assert_eq!(2, page.size());
+    }
+
+    #[test]
+    fn split_must_split_page() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+
+        for index in 0..4 {
+            page.insert(index, index);
+        }
+
+        assert_eq!(4, page.size());
+
+        let next = page.split();
+
+        assert_eq!(true, page.contains(&0));
+        assert_eq!(true, page.contains(&1));
+        assert_eq!(false, page.contains(&2));
+        assert_eq!(false, page.contains(&3));
+        assert_eq!(2, page.size());
+
+        assert_eq!(false, next.contains(&0));
+        assert_eq!(false, next.contains(&1));
+        assert_eq!(true, next.contains(&2));
+        assert_eq!(true, next.contains(&3));
+        assert_eq!(2, next.size());
     }
 }
