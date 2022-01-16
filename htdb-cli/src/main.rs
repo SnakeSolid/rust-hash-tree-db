@@ -6,9 +6,9 @@ mod options;
 
 use crate::command::Command;
 use crate::options::Options;
-use hash_tree_db::Config;
-use hash_tree_db::Database;
-use hash_tree_db::PrintVisiter;
+use htdb_sys::Config;
+use htdb_sys::Database;
+use htdb_sys::PrintVisiter;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use structopt::StructOpt;

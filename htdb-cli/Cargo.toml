@@ -1,0 +1,17 @@
+[package]
+name = "htdb-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+env_logger = "0.9"
+htdb-sys = { path = "../htdb-sys" }
+jemallocator = "0.3"
+log = "0.4"
+rustyline = "9.1"
+structopt = "0.3"
+
+[dependencies.nom]
+version = "7.1"
+default-features = false
+features = [ "alloc" ]

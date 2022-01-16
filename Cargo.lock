@@ -202,23 +202,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hash-tree-db"
-version = "0.1.0"
-dependencies = [
- "bencher",
- "bincode",
- "env_logger",
- "flate2",
- "jemallocator",
- "log",
- "nom",
- "rand",
- "rustyline",
- "serde",
- "structopt",
-]
-
-[[package]]
 name = "heck"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -234,6 +217,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "htdb-cli"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "htdb-sys",
+ "jemallocator",
+ "log",
+ "nom",
+ "rustyline",
+ "structopt",
+]
+
+[[package]]
+name = "htdb-sys"
+version = "0.1.0"
+dependencies = [
+ "bencher",
+ "bincode",
+ "flate2",
+ "rand",
+ "serde",
 ]
 
 [[package]]
