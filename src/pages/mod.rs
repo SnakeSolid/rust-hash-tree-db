@@ -1,14 +1,19 @@
 mod page;
 
 pub use self::page::Page;
-
 use crate::config::Config;
 use crate::visiter::TreeVisiter;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub struct Pages<K, V> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Pages<K, V>
+where
+    K: Ord,
+{
+    #[serde(skip)]
     config: Rc<Config>,
     pages: Vec<Page<K, V>>,
 }

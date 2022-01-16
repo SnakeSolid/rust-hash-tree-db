@@ -47,7 +47,7 @@ impl Default for Config {
         Config {
             max_page_size: MAX_PAGE_SIZE,
             max_pages: MAX_PAGES,
-            storage_path: PathBuf::default(),
+            storage_path: PathBuf::from("."),
         }
     }
 }

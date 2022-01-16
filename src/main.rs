@@ -107,14 +107,14 @@ fn main() {
 
                     println!("OK");
                 }
-                Ok(Command::Save {}) => {
-                    println!("ERR Command not implemented");
-                    continue;
-                }
-                Ok(Command::Load {}) => {
-                    println!("ERR Command not implemented");
-                    continue;
-                }
+                Ok(Command::Save {}) => match database.save() {
+                    Ok(()) => println!("OK"),
+                    Err(error) => println!("ERR {}", error),
+                },
+                Ok(Command::Load {}) => match database.load() {
+                    Ok(()) => println!("OK"),
+                    Err(error) => println!("ERR {}", error),
+                },
                 Ok(Command::Exit {}) => {
                     break;
                 }

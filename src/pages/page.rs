@@ -1,9 +1,14 @@
-use std::{collections::BTreeMap, fmt::Debug};
-
 use crate::visiter::TreeVisiter;
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::BTreeMap;
+use std::fmt::Debug;
 
-#[derive(Debug)]
-pub struct Page<K, V> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Page<K, V>
+where
+    K: Ord,
+{
     range_start: K,
     range_end: K,
     tree: BTreeMap<K, V>,

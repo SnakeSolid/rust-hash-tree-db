@@ -4,22 +4,31 @@ use crate::pages::Pages;
 use crate::visiter::TreeVisiter;
 use crate::DatabaseError;
 use crate::HashTreeVisiter;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fs::File;
 use std::hash::Hash;
+use std::io::BufReader;
+use std::io::BufWriter;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct Database<H, K, V> {
+pub struct Database<H, K, V>
+where
+    K: Ord,
+{
     config: Rc<Config>,
     map: HashMap<H, Pages<K, V>, TrivialHasherBuilder>,
 }
 
 impl<H, K, V> Database<H, K, V>
 where
-    H: Eq + Hash + Debug,
-    K: Ord + Clone + Default + Debug,
-    V: Default + Debug,
+    H: Eq + Hash + Serialize + DeserializeOwned + Debug,
+    K: Ord + Clone + Default + Serialize + DeserializeOwned + Debug,
+    V: Default + Serialize + DeserializeOwned + Debug,
 {
     pub fn new(config: Config) -> Database<H, K, V> {
         Database {
@@ -65,6 +74,31 @@ where
 
     pub fn count(&mut self) -> Result<usize, DatabaseError> {
         Ok(self.map.values().map(Pages::size).sum())
+    }
+
+    pub fn save(&mut self) -> Result<(), DatabaseError> {
+        let path = self.config.storage_path().join("full.htdb");
+        let file = File::create(path).map_err(DatabaseError::create_file_error)?;
+        let mut writer = BufWriter::new(file);
+
+        bincode::serialize_into(&mut writer, &self.map).map_err(DatabaseError::serialize_error)?;
+
+        Ok(())
+    }
+
+    pub fn load(&mut self) -> Result<(), DatabaseError> {
+        let path = self.config.storage_path().join("full.htdb");
+        let file = File::open(path).map_err(DatabaseError::open_file_error)?;
+        let mut reader = BufReader::new(file);
+
+        self.map.clear();
+
+        let data: HashMap<H, Pages<K, V>> =
+            bincode::deserialize_from(&mut reader).map_err(DatabaseError::serialize_error)?;
+
+        self.map.extend(data.into_iter());
+
+        Ok(())
     }
 
     pub fn visit<T>(&self, visiter: &mut T)
