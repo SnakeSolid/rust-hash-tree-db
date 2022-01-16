@@ -40,8 +40,6 @@ fn main() {
 
         match Command::parse(&input) {
             Ok(Command::Get { hash_key, tree_key }) => {
-                editor.add_history_entry(&input);
-
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
@@ -56,8 +54,6 @@ fn main() {
                 tree_key,
                 data,
             }) => {
-                editor.add_history_entry(&input);
-
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
                 let data = data.into();
@@ -68,8 +64,6 @@ fn main() {
                 }
             }
             Ok(Command::Contains { hash_key, tree_key }) => {
-                editor.add_history_entry(&input);
-
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
@@ -80,8 +74,6 @@ fn main() {
                 }
             }
             Ok(Command::Delete { hash_key, tree_key }) => {
-                editor.add_history_entry(&input);
-
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
@@ -91,30 +83,37 @@ fn main() {
                     Err(error) => println!("ERR {}", error),
                 }
             }
-            Ok(Command::Count {}) => {
-                editor.add_history_entry(&input);
-
-                match database.count() {
-                    Ok(count) => println!("OK {}", count),
-                    Err(error) => println!("ERR {}", error),
-                }
+            Ok(Command::Range { .. }) => {
+                println!("ERR Command not implemented");
+                continue;
             }
+            Ok(Command::Count {}) => match database.count() {
+                Ok(count) => println!("OK {}", count),
+                Err(error) => println!("ERR {}", error),
+            },
             Ok(Command::Show {}) => {
-                editor.add_history_entry(&input);
-
                 database.visit(&mut PrintVisiter::default());
 
                 println!("OK");
             }
+            Ok(Command::Save {}) => {
+                println!("ERR Command not implemented");
+                continue;
+            }
+            Ok(Command::Load {}) => {
+                println!("ERR Command not implemented");
+                continue;
+            }
             Ok(Command::Exit {}) => {
                 break;
             }
-            Ok(command) => {
-                println!("Unknown command: {:?}", command);
-            }
             Err(error) => {
                 println!("{}", error);
+
+                continue;
             }
         }
+
+        editor.add_history_entry(&input);
     }
 }
