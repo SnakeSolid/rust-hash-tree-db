@@ -1,0 +1,21 @@
+[package]
+name = "hash-tree-db"
+version = "0.1.0"
+edition = "2021"
+
+[[bench]]
+name = "main"
+harness = false
+
+[dependencies]
+bencher = "0.1"
+env_logger = "0.9"
+jemallocator = "0.3"
+log = "0.4"
+rand = "0.8"
+rustyline = "9.1"
+
+[dependencies.nom]
+version = "7.1"
+default-features = false
+features = [ "alloc" ]
