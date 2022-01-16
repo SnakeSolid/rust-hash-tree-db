@@ -8,6 +8,7 @@ use std::io::Error as IoError;
 #[derive(Debug)]
 pub enum DatabaseError {
     CreateFileError { message: String },
+    EncodingError { message: String },
     OpenFileError { message: String },
     SerializeError { message: String },
 }
@@ -15,6 +16,12 @@ pub enum DatabaseError {
 impl DatabaseError {
     pub fn create_file_error(error: IoError) -> DatabaseError {
         DatabaseError::CreateFileError {
+            message: format!("{}", error),
+        }
+    }
+
+    pub fn encoding_error(error: IoError) -> DatabaseError {
+        DatabaseError::EncodingError {
             message: format!("{}", error),
         }
     }
@@ -38,6 +45,7 @@ impl Display for DatabaseError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
             DatabaseError::CreateFileError { message } => write!(f, "{}", message),
+            DatabaseError::EncodingError { message } => write!(f, "{}", message),
             DatabaseError::OpenFileError { message } => write!(f, "{}", message),
             DatabaseError::SerializeError { message } => write!(f, "{}", message),
         }

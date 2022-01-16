@@ -4,9 +4,11 @@ use crate::pages::Pages;
 use crate::visiter::TreeVisiter;
 use crate::DatabaseError;
 use crate::HashTreeVisiter;
+use flate2::read::DeflateDecoder;
+use flate2::write::DeflateEncoder;
+use flate2::Compression;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
@@ -79,9 +81,11 @@ where
     pub fn save(&mut self) -> Result<(), DatabaseError> {
         let path = self.config.storage_path().join("full.htdb");
         let file = File::create(path).map_err(DatabaseError::create_file_error)?;
-        let mut writer = BufWriter::new(file);
+        let writer = BufWriter::new(file);
+        let mut encoder = DeflateEncoder::new(writer, Compression::default());
 
-        bincode::serialize_into(&mut writer, &self.map).map_err(DatabaseError::serialize_error)?;
+        bincode::serialize_into(&mut encoder, &self.map).map_err(DatabaseError::serialize_error)?;
+        encoder.finish().map_err(DatabaseError::encoding_error)?;
 
         Ok(())
     }
@@ -89,12 +93,13 @@ where
     pub fn load(&mut self) -> Result<(), DatabaseError> {
         let path = self.config.storage_path().join("full.htdb");
         let file = File::open(path).map_err(DatabaseError::open_file_error)?;
-        let mut reader = BufReader::new(file);
+        let reader = BufReader::new(file);
+        let mut decoder = DeflateDecoder::new(reader);
 
         self.map.clear();
 
         let data: HashMap<H, Pages<K, V>> =
-            bincode::deserialize_from(&mut reader).map_err(DatabaseError::serialize_error)?;
+            bincode::deserialize_from(&mut decoder).map_err(DatabaseError::serialize_error)?;
 
         self.map.extend(data.into_iter());
 

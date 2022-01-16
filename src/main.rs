@@ -31,7 +31,7 @@ fn main() {
 
     info!("Entered to REPL mode");
 
-    loop {
+    'main_loop: loop {
         let input = match editor.readline(">> ") {
             Ok(line) => line,
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
@@ -116,7 +116,7 @@ fn main() {
                     Err(error) => println!("ERR {}", error),
                 },
                 Ok(Command::Exit {}) => {
-                    break;
+                    break 'main_loop;
                 }
                 Err(error) => {
                     println!("{}", error);
