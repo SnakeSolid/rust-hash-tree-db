@@ -135,7 +135,7 @@ where
 mod tests {
     use crate::pages::Pages;
     use crate::visiter::TreeVisiter;
-    use crate::{Config, PrintVisiter};
+    use crate::Config;
     use std::rc::Rc;
 
     #[derive(Default)]

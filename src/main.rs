@@ -40,13 +40,15 @@ fn main() {
 
         match Command::parse(&input) {
             Ok(Command::Get { hash_key, tree_key }) => {
+                editor.add_history_entry(&input);
+
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
                 match database.get(&hash_key, &tree_key) {
                     Ok(Some(data)) => println!("OK {} {} {}", hash_key, tree_key, data),
                     Ok(None) => println!("OK"),
-                    Err(_error) => println!("ERR"),
+                    Err(error) => println!("ERR {}", error),
                 }
             }
             Ok(Command::Put {
@@ -54,36 +56,52 @@ fn main() {
                 tree_key,
                 data,
             }) => {
+                editor.add_history_entry(&input);
+
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
                 let data = data.into();
 
                 match database.put(hash_key, tree_key, data) {
                     Ok(_replaced) => println!("OK"),
-                    Err(_error) => println!("ERR"),
+                    Err(error) => println!("ERR {}", error),
                 }
             }
             Ok(Command::Contains { hash_key, tree_key }) => {
+                editor.add_history_entry(&input);
+
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
                 match database.contains(&hash_key, &tree_key) {
                     Ok(true) => println!("OK TRUE"),
                     Ok(false) => println!("OK FALSE"),
-                    Err(_error) => println!("ERR"),
+                    Err(error) => println!("ERR {}", error),
                 }
             }
             Ok(Command::Delete { hash_key, tree_key }) => {
+                editor.add_history_entry(&input);
+
                 let hash_key = hash_key.into();
                 let tree_key = tree_key.into();
 
                 match database.delete(&hash_key, &tree_key) {
                     Ok(true) => println!("OK TRUE"),
                     Ok(false) => println!("OK FALSE"),
-                    Err(_error) => println!("ERR"),
+                    Err(error) => println!("ERR {}", error),
+                }
+            }
+            Ok(Command::Count {}) => {
+                editor.add_history_entry(&input);
+
+                match database.count() {
+                    Ok(count) => println!("OK {}", count),
+                    Err(error) => println!("ERR {}", error),
                 }
             }
             Ok(Command::Show {}) => {
+                editor.add_history_entry(&input);
+
                 database.visit(&mut PrintVisiter::default());
 
                 println!("OK");

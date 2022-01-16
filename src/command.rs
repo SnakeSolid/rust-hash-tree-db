@@ -34,6 +34,7 @@ pub enum Command<'a> {
         tree_start: &'a str,
         tree_end: &'a str,
     },
+    Count {},
     Show {},
     Save {},
     Load {},
@@ -141,6 +142,13 @@ where
     )
 }
 
+fn parse_count<'a, E>() -> impl Parser<&'a str, Command<'a>, E>
+where
+    E: ParseError<&'a str>,
+{
+    map(tuple((tag("COUNT"), space0)), |(_, _)| Command::Count {})
+}
+
 fn parse_show<'a, E>() -> impl Parser<&'a str, Command<'a>, E>
 where
     E: ParseError<&'a str>,
@@ -182,6 +190,7 @@ where
                 parse_contains(),
                 parse_delete(),
                 parse_range(),
+                parse_count(),
                 parse_show(),
                 parse_save(),
                 parse_load(),

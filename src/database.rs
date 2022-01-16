@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::hasher::TrivialHasherBuilder;
 use crate::pages::Pages;
 use crate::visiter::TreeVisiter;
+use crate::DatabaseError;
 use crate::HashTreeVisiter;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -27,7 +28,7 @@ where
         }
     }
 
-    pub fn get(&mut self, hash_key: &H, tree_key: &K) -> Result<Option<&V>, ()> {
+    pub fn get(&mut self, hash_key: &H, tree_key: &K) -> Result<Option<&V>, DatabaseError> {
         if let Some(pages) = self.map.get(hash_key) {
             Ok(pages.get(tree_key))
         } else {
@@ -35,7 +36,7 @@ where
         }
     }
 
-    pub fn put(&mut self, hash_key: H, tree_key: K, data: V) -> Result<bool, ()> {
+    pub fn put(&mut self, hash_key: H, tree_key: K, data: V) -> Result<bool, DatabaseError> {
         let pages = self
             .map
             .entry(hash_key)
@@ -46,7 +47,7 @@ where
         Ok(replaced)
     }
 
-    pub fn contains(&mut self, hash_key: &H, tree_key: &K) -> Result<bool, ()> {
+    pub fn contains(&mut self, hash_key: &H, tree_key: &K) -> Result<bool, DatabaseError> {
         if let Some(pages) = self.map.get(hash_key) {
             Ok(pages.contains(tree_key))
         } else {
@@ -54,12 +55,16 @@ where
         }
     }
 
-    pub fn delete(&mut self, hash_key: &H, tree_key: &K) -> Result<bool, ()> {
+    pub fn delete(&mut self, hash_key: &H, tree_key: &K) -> Result<bool, DatabaseError> {
         if let Some(pages) = self.map.get_mut(hash_key) {
             Ok(pages.remove(tree_key))
         } else {
             Ok(false)
         }
+    }
+
+    pub fn count(&mut self) -> Result<usize, DatabaseError> {
+        Ok(self.map.values().map(Pages::size).sum())
     }
 
     pub fn visit<T>(&self, visiter: &mut T)
