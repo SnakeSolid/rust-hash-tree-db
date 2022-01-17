@@ -3,6 +3,7 @@
 members = [
 	"htdb-sys",
 	"htdb-cli",
+	"htdb-jni",
 ]
 
 [profile.release]

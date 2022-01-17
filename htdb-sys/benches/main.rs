@@ -3,8 +3,8 @@ extern crate bencher;
 
 use bencher::black_box;
 use bencher::Bencher;
-use hash_tree_db::Config;
-use hash_tree_db::Database;
+use htdb_sys::Config;
+use htdb_sys::Database;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
