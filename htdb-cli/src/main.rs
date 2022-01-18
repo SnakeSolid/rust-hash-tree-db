@@ -13,9 +13,6 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use structopt::StructOpt;
 
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
 fn main() {
     env_logger::init();
 

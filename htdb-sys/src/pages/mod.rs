@@ -35,10 +35,7 @@ where
             return None;
         }
 
-        match self
-            .pages
-            .partition_point(|page| page.range_start() <= &key)
-        {
+        match self.pages.partition_point(|page| page.range_start() <= key) {
             0 => None,
             index => self.pages[index - 1].get(key),
         }
@@ -89,10 +86,7 @@ where
             return false;
         }
 
-        match self
-            .pages
-            .partition_point(|page| page.range_start() <= &key)
-        {
+        match self.pages.partition_point(|page| page.range_start() <= key) {
             0 => false,
             index => self.pages[index - 1].contains(key),
         }
@@ -103,10 +97,7 @@ where
             return false;
         }
 
-        match self
-            .pages
-            .partition_point(|page| page.range_start() <= &key)
-        {
+        match self.pages.partition_point(|page| page.range_start() <= key) {
             0 => false,
             index => {
                 let index = index - 1;

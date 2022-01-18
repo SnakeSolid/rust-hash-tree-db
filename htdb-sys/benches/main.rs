@@ -9,9 +9,6 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
 const N: usize = 10_000;
 
 fn crate_database() -> Database<String, String, String> {
