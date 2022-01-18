@@ -64,6 +64,21 @@ where
         self.tree.remove(key).is_some()
     }
 
+    pub fn range<F>(&self, key_first: &K, key_last: &K, mut callback: F)
+    where
+        F: FnMut(&K, &V) -> bool,
+    {
+        if self.tree.is_empty() {
+            return;
+        }
+
+        for (key, value) in self.tree.range(key_first..=key_last) {
+            if !callback(key, value) {
+                break;
+            }
+        }
+    }
+
     pub fn size(&self) -> usize {
         self.tree.len()
     }
@@ -238,5 +253,57 @@ mod tests {
         assert_eq!(true, next.contains(&2));
         assert_eq!(true, next.contains(&3));
         assert_eq!(2, next.size());
+    }
+
+    #[test]
+    fn range_must_select_one_value() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+        let mut result = Vec::new();
+
+        page.insert(10, 100);
+        page.insert(20, 200);
+        page.insert(30, 300);
+        page.range(&15, &25, |&k, &v| {
+            result.push((k, v));
+
+            true
+        });
+
+        assert_eq!(vec![(20, 200)], result);
+    }
+
+    #[test]
+    fn range_must_select_one_when_breaked() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+        let mut result = Vec::new();
+
+        page.insert(10, 100);
+        page.insert(20, 200);
+        page.range(&5, &25, |&k, &v| {
+            result.push((k, v));
+
+            false
+        });
+
+        assert_eq!(vec![(20, 200)], result);
+    }
+
+    #[test]
+    fn range_must_select_all_values() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+        let mut result = Vec::new();
+
+        page.insert(1, 10);
+        page.insert(2, 20);
+        page.insert(3, 30);
+        page.insert(4, 40);
+        page.insert(5, 50);
+        page.range(&2, &4, |&k, &v| {
+            result.push((k, v));
+
+            true
+        });
+
+        assert_eq!(vec![(2, 20), (3, 30), (4, 40)], result);
     }
 }

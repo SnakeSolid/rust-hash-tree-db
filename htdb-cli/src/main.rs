@@ -91,9 +91,23 @@ fn main() {
                         Err(error) => println!("ERR {}", error),
                     }
                 }
-                Ok(Command::Range { .. }) => {
-                    println!("ERR Command not implemented");
-                    continue;
+                Ok(Command::Range {
+                    hash_key,
+                    tree_start,
+                    tree_end,
+                }) => {
+                    let hash_key = hash_key.into();
+                    let tree_start = tree_start.into();
+                    let tree_end = tree_end.into();
+
+                    match database.range(&hash_key, &tree_start, &tree_end, |key, value| {
+                        println!("{} {} {}", hash_key, key, value);
+
+                        true
+                    }) {
+                        Ok(()) => println!("OK"),
+                        Err(error) => println!("ERR {}", error),
+                    }
                 }
                 Ok(Command::Count {}) => match database.count() {
                     Ok(count) => println!("OK {}", count),

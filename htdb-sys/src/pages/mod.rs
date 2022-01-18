@@ -113,6 +113,31 @@ where
         }
     }
 
+    pub fn range<F>(&self, tree_first: &K, tree_last: &K, mut callback: F)
+    where
+        F: FnMut(&K, &V) -> bool,
+    {
+        if self.pages.is_empty() {
+            return;
+        }
+
+        let start_page = match self
+            .pages
+            .partition_point(|page| page.range_start() <= tree_first)
+        {
+            0 => 0,
+            index => index - 1,
+        };
+
+        for page in &self.pages[start_page..self.pages.len()] {
+            if page.range_start() > tree_last {
+                break;
+            }
+
+            page.range(tree_first, tree_last, &mut callback);
+        }
+    }
+
     pub fn size(&self) -> usize {
         self.pages.iter().map(|page| page.size()).sum()
     }
@@ -304,5 +329,76 @@ mod tests {
             pages.insert(index, index);
             assert_eq!(10, pages.size());
         }
+    }
+
+    #[test]
+    fn range_must_select_none() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let pages: Pages<usize, usize> = Pages::new(config);
+        let mut result = Vec::new();
+
+        pages.range(&0, &0, |&k, &v| {
+            result.push((k, v));
+
+            true
+        });
+
+        assert_eq!(true, result.is_empty());
+    }
+
+    #[test]
+    fn range_must_select_one_when_breaked() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+        let mut result = Vec::new();
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+        pages.range(&0, &3, |&k, &v| {
+            result.push((k, v));
+
+            false
+        });
+
+        assert_eq!(vec![(1, 10)], result);
+    }
+
+    #[test]
+    fn range_must_select_page_values() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+        let mut result = Vec::new();
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+        pages.insert(3, 30);
+        pages.insert(4, 40);
+        pages.range(&2, &3, |&k, &v| {
+            result.push((k, v));
+
+            true
+        });
+
+        assert_eq!(vec![(2, 20), (3, 30)], result);
+    }
+
+    #[test]
+    fn range_must_select_all_values() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+        let mut result = Vec::new();
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+        pages.insert(3, 30);
+        pages.insert(4, 40);
+        pages.insert(5, 50);
+        pages.range(&2, &4, |&k, &v| {
+            result.push((k, v));
+
+            true
+        });
+
+        assert_eq!(vec![(2, 20), (3, 30), (4, 40)], result);
     }
 }

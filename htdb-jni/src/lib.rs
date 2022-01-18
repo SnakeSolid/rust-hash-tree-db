@@ -1,24 +1,24 @@
 use htdb_sys::Config;
 use htdb_sys::Database;
 use jni::objects::JClass;
+use jni::objects::JObject;
 use jni::objects::JString;
+use jni::objects::JValue;
+use jni::signature::JavaType;
+use jni::signature::Primitive;
 use jni::sys::jboolean;
 use jni::sys::jbyteArray;
 use jni::sys::jint;
 use jni::sys::jlong;
+use jni::sys::jobject;
 use jni::JNIEnv;
-use std::ptr;
+use std::ptr::null_mut;
 
 const ILLEGAL_ARGUMENT: &str = "java/lang/IllegalArgumentException";
+const METHOD_CALLBACL_ACCEPT: &str = "accept";
+const SIGNATURE_CALLBACL_ACCEPT: &str = "([B[B)Z";
 
 macro_rules! illegal_argument {
-    ($env:ident, $message:expr) => {{
-        if let Err(error) = $env.throw_new(ILLEGAL_ARGUMENT, $message) {
-            eprint!("{}", error);
-        }
-
-        return;
-    }};
     ($env:ident, $message:expr, $result:expr) => {{
         if let Err(error) = $env.throw_new(ILLEGAL_ARGUMENT, $message) {
             eprint!("{}", error);
@@ -26,15 +26,18 @@ macro_rules! illegal_argument {
 
         return $result;
     }};
+    ($env:ident, $predicate:expr, $message:expr, $result:expr) => {{
+        if $predicate {
+            if let Err(error) = $env.throw_new(ILLEGAL_ARGUMENT, $message) {
+                eprint!("{}", error);
+            }
+
+            return $result;
+        }
+    }};
 }
 
 macro_rules! database {
-    ($env:ident, $handle:ident) => {
-        match unsafe { ($handle as *mut JavaDatabase).as_mut() } {
-            Some(database) => database,
-            None => illegal_argument!($env, "Invalid database handle"),
-        }
-    };
     ($env:ident, $handle:ident, $result:expr) => {
         match unsafe { ($handle as *mut JavaDatabase).as_mut() } {
             Some(database) => database,
@@ -43,7 +46,7 @@ macro_rules! database {
     };
 }
 
-macro_rules! check {
+macro_rules! unwrap {
     ($env:ident, $expression:expr, $result:expr) => {
         match $expression {
             Ok(value) => value,
@@ -84,9 +87,9 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_create(
     }
 
     if !storage_path.is_null() {
-        config = config.set_storage_path(check!(
+        config = config.set_storage_path(unwrap!(
             env,
-            check!(env, env.get_string(storage_path), 0).to_str(),
+            unwrap!(env, env.get_string(storage_path), 0).to_str(),
             0
         ));
     }
@@ -101,19 +104,30 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_get(
     env: JNIEnv,
     _class: JClass,
     handle: jlong,
-    hash: jbyteArray,
+    partition: jbyteArray,
     key: jbyteArray,
 ) -> jbyteArray {
-    let database = database!(env, handle, ptr::null_mut());
-    let hash = check!(env, env.convert_byte_array(hash), ptr::null_mut());
-    let key = check!(env, env.convert_byte_array(key), ptr::null_mut());
-    let value = database.get(&hash, &key).expect("Failed to get data");
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        null_mut()
+    );
+    illegal_argument!(
+        env,
+        key.is_null(),
+        "Parameter `key` must not be null.",
+        null_mut()
+    );
+
+    let database = database!(env, handle, null_mut());
+    let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
+    let key = unwrap!(env, env.convert_byte_array(key), null_mut());
+    let value = database.get(&partition, &key).expect("Failed to get data");
 
     match value {
-        Some(value) => env
-            .byte_array_from_slice(value)
-            .expect("Failed to create new byte array"),
-        None => ptr::null_mut(),
+        Some(value) => unwrap!(env, env.byte_array_from_slice(value), null_mut()),
+        None => null_mut(),
     }
 }
 
@@ -122,16 +136,32 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_put(
     env: JNIEnv,
     _class: JClass,
     handle: jlong,
-    hash: jbyteArray,
+    partition: jbyteArray,
     key: jbyteArray,
     value: jbyteArray,
 ) -> jboolean {
-    let database = database!(env, handle, 0);
-    let hash = check!(env, env.convert_byte_array(hash), 0);
-    let key = check!(env, env.convert_byte_array(key), 0);
-    let value = check!(env, env.convert_byte_array(value), 0);
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        0
+    );
+    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
+    illegal_argument!(
+        env,
+        value.is_null(),
+        "Parameter `value` must not be null.",
+        0
+    );
 
-    database.put(hash, key, value).expect("Failed to put data") as jboolean
+    let database = database!(env, handle, 0);
+    let partition = unwrap!(env, env.convert_byte_array(partition), 0);
+    let key = unwrap!(env, env.convert_byte_array(key), 0);
+    let value = unwrap!(env, env.convert_byte_array(value), 0);
+
+    database
+        .put(partition, key, value)
+        .expect("Failed to put data") as jboolean
 }
 
 #[no_mangle]
@@ -139,15 +169,23 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_contains(
     env: JNIEnv,
     _class: JClass,
     handle: jlong,
-    hash: jbyteArray,
+    partition: jbyteArray,
     key: jbyteArray,
 ) -> jboolean {
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        0
+    );
+    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
+
     let database = database!(env, handle, 0);
-    let hash = check!(env, env.convert_byte_array(hash), 0);
-    let key = check!(env, env.convert_byte_array(key), 0);
+    let partition = unwrap!(env, env.convert_byte_array(partition), 0);
+    let key = unwrap!(env, env.convert_byte_array(key), 0);
 
     database
-        .contains(&hash, &key)
+        .contains(&partition, &key)
         .expect("Failed to check data") as jboolean
 }
 
@@ -156,14 +194,90 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_delete(
     env: JNIEnv,
     _class: JClass,
     handle: jlong,
-    hash: jbyteArray,
+    partition: jbyteArray,
     key: jbyteArray,
 ) -> jboolean {
-    let database = database!(env, handle, 0);
-    let hash = check!(env, env.convert_byte_array(hash), 0);
-    let key = check!(env, env.convert_byte_array(key), 0);
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        0
+    );
+    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
 
-    database.delete(&hash, &key).expect("Failed to delete data") as jboolean
+    let database = database!(env, handle, 0);
+    let partition = unwrap!(env, env.convert_byte_array(partition), 0);
+    let key = unwrap!(env, env.convert_byte_array(key), 0);
+
+    database
+        .delete(&partition, &key)
+        .expect("Failed to delete data") as jboolean
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
+    env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    partition: jbyteArray,
+    key_first: jbyteArray,
+    key_last: jbyteArray,
+    callback: jobject,
+) {
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        ()
+    );
+    illegal_argument!(
+        env,
+        key_first.is_null(),
+        "Parameter `key_first` must not be null.",
+        ()
+    );
+    illegal_argument!(
+        env,
+        key_last.is_null(),
+        "Parameter `key_last` must not be null.",
+        ()
+    );
+    illegal_argument!(
+        env,
+        callback.is_null(),
+        "Parameter `callback` must not be null.",
+        ()
+    );
+
+    let database = database!(env, handle, ());
+    let partition = unwrap!(env, env.convert_byte_array(partition), ());
+    let key_first = unwrap!(env, env.convert_byte_array(key_first), ());
+    let key_last = unwrap!(env, env.convert_byte_array(key_last), ());
+    let callback = JObject::from(callback);
+    let method_accept = unwrap!(
+        env,
+        env.get_method_id(callback, METHOD_CALLBACL_ACCEPT, SIGNATURE_CALLBACL_ACCEPT),
+        ()
+    );
+
+    database
+        .range(&partition, &key_first, &key_last, |key, value| {
+            let key = unwrap!(env, env.byte_array_from_slice(key), false);
+            let value = unwrap!(env, env.byte_array_from_slice(value), false);
+            let result = unwrap!(
+                env,
+                env.call_method_unchecked(
+                    callback,
+                    method_accept,
+                    JavaType::Primitive(Primitive::Boolean),
+                    &[JValue::from(key), JValue::from(value)]
+                ),
+                false
+            );
+
+            !unwrap!(env, env.exception_check(), false) && unwrap!(env, result.z(), false)
+        })
+        .expect("Failed to select data range");
 }
 
 #[no_mangle]
@@ -183,7 +297,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_save(
     _class: JClass,
     handle: jlong,
 ) {
-    let database = database!(env, handle);
+    let database = database!(env, handle, ());
 
     database.save().expect("Failed to save data");
 }
@@ -194,7 +308,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_load(
     _class: JClass,
     handle: jlong,
 ) {
-    let database = database!(env, handle);
+    let database = database!(env, handle, ());
 
     database.load().expect("Failed to load data");
 }

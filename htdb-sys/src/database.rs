@@ -74,6 +74,29 @@ where
         }
     }
 
+    pub fn range<F>(
+        &mut self,
+        hash_key: &H,
+        tree_first: &K,
+        tree_last: &K,
+        callback: F,
+    ) -> Result<(), DatabaseError>
+    where
+        F: Fn(&K, &V) -> bool,
+    {
+        if tree_first > tree_last {
+            return Err(DatabaseError::invalid_range(
+                "Invalid range, first must be less or equals to last",
+            ));
+        }
+
+        if let Some(pages) = self.map.get(hash_key) {
+            Ok(pages.range(tree_first, tree_last, callback))
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn count(&mut self) -> Result<usize, DatabaseError> {
         Ok(self.map.values().map(Pages::size).sum())
     }
