@@ -15,7 +15,10 @@ use jni::JNIEnv;
 use std::ptr::null_mut;
 
 const ILLEGAL_ARGUMENT: &str = "java/lang/IllegalArgumentException";
+const CLASS_ENTRY: &str = "ru/snake/htdb/entry/RawEntry";
+const METHOD_ENTRY_INIT: &str = "<init>";
 const METHOD_CALLBACL_ACCEPT: &str = "accept";
+const SIGNATURE_ENTRY_INIT: &str = "([B[B)V";
 const SIGNATURE_CALLBACL_ACCEPT: &str = "([B[B)Z";
 
 macro_rules! illegal_argument {
@@ -278,6 +281,110 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
             !unwrap!(env, env.exception_check(), false) && unwrap!(env, result.z(), false)
         })
         .expect("Failed to select data range");
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ru_snake_htdb_HTDBNative_succ(
+    env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    partition: jbyteArray,
+    key: jbyteArray,
+) -> jobject {
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        null_mut()
+    );
+    illegal_argument!(
+        env,
+        key.is_null(),
+        "Parameter `key` must not be null.",
+        null_mut()
+    );
+
+    let database = database!(env, handle, null_mut());
+    let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
+    let key = unwrap!(env, env.convert_byte_array(key), null_mut());
+    let constructor = unwrap!(
+        env,
+        env.get_method_id(CLASS_ENTRY, METHOD_ENTRY_INIT, SIGNATURE_ENTRY_INIT),
+        null_mut()
+    );
+
+    if let Some((key, value)) = database
+        .succ(&partition, &key)
+        .expect("Failed to select successor key")
+    {
+        let key = unwrap!(env, env.byte_array_from_slice(key), null_mut());
+        let value = unwrap!(env, env.byte_array_from_slice(value), null_mut());
+        let result = unwrap!(
+            env,
+            env.new_object_unchecked(
+                CLASS_ENTRY,
+                constructor,
+                &[JValue::from(key), JValue::from(value)]
+            ),
+            null_mut()
+        );
+
+        result.into_inner()
+    } else {
+        null_mut()
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ru_snake_htdb_HTDBNative_pred(
+    env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    partition: jbyteArray,
+    key: jbyteArray,
+) -> jobject {
+    illegal_argument!(
+        env,
+        partition.is_null(),
+        "Parameter `partition` must not be null.",
+        null_mut()
+    );
+    illegal_argument!(
+        env,
+        key.is_null(),
+        "Parameter `key` must not be null.",
+        null_mut()
+    );
+
+    let database = database!(env, handle, null_mut());
+    let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
+    let key = unwrap!(env, env.convert_byte_array(key), null_mut());
+    let constructor = unwrap!(
+        env,
+        env.get_method_id(CLASS_ENTRY, METHOD_ENTRY_INIT, SIGNATURE_ENTRY_INIT),
+        null_mut()
+    );
+
+    if let Some((key, value)) = database
+        .pred(&partition, &key)
+        .expect("Failed to select predecessor key")
+    {
+        let key = unwrap!(env, env.byte_array_from_slice(key), null_mut());
+        let value = unwrap!(env, env.byte_array_from_slice(value), null_mut());
+        let result = unwrap!(
+            env,
+            env.new_object_unchecked(
+                CLASS_ENTRY,
+                constructor,
+                &[JValue::from(key), JValue::from(value)]
+            ),
+            null_mut()
+        );
+
+        result.into_inner()
+    } else {
+        null_mut()
+    }
 }
 
 #[no_mangle]
