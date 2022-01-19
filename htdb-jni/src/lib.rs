@@ -126,7 +126,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_get(
     let database = database!(env, handle, null_mut());
     let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
     let key = unwrap!(env, env.convert_byte_array(key), null_mut());
-    let value = database.get(&partition, &key).expect("Failed to get data");
+    let value = unwrap!(env, database.get(&partition, &key), null_mut());
 
     match value {
         Some(value) => unwrap!(env, env.byte_array_from_slice(value), null_mut()),
@@ -162,9 +162,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_put(
     let key = unwrap!(env, env.convert_byte_array(key), 0);
     let value = unwrap!(env, env.convert_byte_array(value), 0);
 
-    database
-        .put(partition, key, value)
-        .expect("Failed to put data") as jboolean
+    unwrap!(env, database.put(partition, key, value), 0) as jboolean
 }
 
 #[no_mangle]
@@ -187,9 +185,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_contains(
     let partition = unwrap!(env, env.convert_byte_array(partition), 0);
     let key = unwrap!(env, env.convert_byte_array(key), 0);
 
-    database
-        .contains(&partition, &key)
-        .expect("Failed to check data") as jboolean
+    unwrap!(env, database.contains(&partition, &key), 0) as jboolean
 }
 
 #[no_mangle]
@@ -212,9 +208,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_delete(
     let partition = unwrap!(env, env.convert_byte_array(partition), 0);
     let key = unwrap!(env, env.convert_byte_array(key), 0);
 
-    database
-        .delete(&partition, &key)
-        .expect("Failed to delete data") as jboolean
+    unwrap!(env, database.delete(&partition, &key), 0) as jboolean
 }
 
 #[no_mangle]
@@ -263,8 +257,9 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
         ()
     );
 
-    database
-        .range(&partition, &key_first, &key_last, |key, value| {
+    unwrap!(
+        env,
+        database.range(&partition, &key_first, &key_last, |key, value| {
             let key = unwrap!(env, env.byte_array_from_slice(key), false);
             let value = unwrap!(env, env.byte_array_from_slice(value), false);
             let result = unwrap!(
@@ -279,8 +274,9 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
             );
 
             !unwrap!(env, env.exception_check(), false) && unwrap!(env, result.z(), false)
-        })
-        .expect("Failed to select data range");
+        }),
+        ()
+    );
 }
 
 #[no_mangle]
@@ -313,10 +309,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_succ(
         null_mut()
     );
 
-    if let Some((key, value)) = database
-        .succ(&partition, &key)
-        .expect("Failed to select successor key")
-    {
+    if let Some((key, value)) = unwrap!(env, database.succ(&partition, &key), null_mut()) {
         let key = unwrap!(env, env.byte_array_from_slice(key), null_mut());
         let value = unwrap!(env, env.byte_array_from_slice(value), null_mut());
         let result = unwrap!(
@@ -365,10 +358,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_pred(
         null_mut()
     );
 
-    if let Some((key, value)) = database
-        .pred(&partition, &key)
-        .expect("Failed to select predecessor key")
-    {
+    if let Some((key, value)) = unwrap!(env, database.pred(&partition, &key), null_mut()) {
         let key = unwrap!(env, env.byte_array_from_slice(key), null_mut());
         let value = unwrap!(env, env.byte_array_from_slice(value), null_mut());
         let result = unwrap!(
@@ -395,7 +385,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_count(
 ) -> jlong {
     let database = database!(env, handle, 0);
 
-    database.count().expect("Failed to count data") as jlong
+    unwrap!(env, database.count(), 0) as jlong
 }
 
 #[no_mangle]
@@ -406,7 +396,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_save(
 ) {
     let database = database!(env, handle, ());
 
-    database.save().expect("Failed to save data");
+    unwrap!(env, database.save(), ());
 }
 
 #[no_mangle]
@@ -417,7 +407,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_load(
 ) {
     let database = database!(env, handle, ());
 
-    database.load().expect("Failed to load data");
+    unwrap!(env, database.load(), ());
 }
 
 #[no_mangle]
