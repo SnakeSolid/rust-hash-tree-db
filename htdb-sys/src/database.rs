@@ -97,6 +97,22 @@ where
         }
     }
 
+    pub fn succ(&mut self, hash_key: &H, tree_key: &K) -> Result<Option<(&K, &V)>, DatabaseError> {
+        if let Some(pages) = self.map.get(hash_key) {
+            Ok(pages.succ(tree_key))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn pred(&mut self, hash_key: &H, tree_key: &K) -> Result<Option<(&K, &V)>, DatabaseError> {
+        if let Some(pages) = self.map.get(hash_key) {
+            Ok(pages.pred(tree_key))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn count(&mut self) -> Result<usize, DatabaseError> {
         Ok(self.map.values().map(Pages::size).sum())
     }

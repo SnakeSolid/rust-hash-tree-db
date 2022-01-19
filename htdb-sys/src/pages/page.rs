@@ -64,19 +64,30 @@ where
         self.tree.remove(key).is_some()
     }
 
-    pub fn range<F>(&self, key_first: &K, key_last: &K, mut callback: F)
+    /// Returns `true` if next page must be processed, otherwise returns `false`.
+    pub fn range<F>(&self, key_first: &K, key_last: &K, mut callback: F) -> bool
     where
         F: FnMut(&K, &V) -> bool,
     {
         if self.tree.is_empty() {
-            return;
+            return true;
         }
 
         for (key, value) in self.tree.range(key_first..=key_last) {
             if !callback(key, value) {
-                break;
+                return false;
             }
         }
+
+        true
+    }
+
+    pub fn succ(&self, key: &K) -> Option<(&K, &V)> {
+        unimplemented!()
+    }
+
+    pub fn pred(&self, key: &K) -> Option<(&K, &V)> {
+        unimplemented!()
     }
 
     pub fn size(&self) -> usize {
@@ -263,12 +274,15 @@ mod tests {
         page.insert(10, 100);
         page.insert(20, 200);
         page.insert(30, 300);
-        page.range(&15, &25, |&k, &v| {
-            result.push((k, v));
 
-            true
-        });
+        assert_eq!(
+            true,
+            page.range(&15, &25, |&k, &v| {
+                result.push((k, v));
 
+                true
+            })
+        );
         assert_eq!(vec![(20, 200)], result);
     }
 
@@ -279,12 +293,15 @@ mod tests {
 
         page.insert(10, 100);
         page.insert(20, 200);
-        page.range(&5, &25, |&k, &v| {
-            result.push((k, v));
 
-            false
-        });
+        assert_eq!(
+            false,
+            page.range(&15, &25, |&k, &v| {
+                result.push((k, v));
 
+                false
+            })
+        );
         assert_eq!(vec![(20, 200)], result);
     }
 
@@ -298,12 +315,15 @@ mod tests {
         page.insert(3, 30);
         page.insert(4, 40);
         page.insert(5, 50);
-        page.range(&2, &4, |&k, &v| {
-            result.push((k, v));
 
-            true
-        });
+        assert_eq!(
+            true,
+            page.range(&2, &4, |&k, &v| {
+                result.push((k, v));
 
+                true
+            })
+        );
         assert_eq!(vec![(2, 20), (3, 30), (4, 40)], result);
     }
 }

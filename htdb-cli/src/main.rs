@@ -109,6 +109,26 @@ fn main() {
                         Err(error) => println!("ERR {}", error),
                     }
                 }
+                Ok(Command::Succ { hash_key, tree_key }) => {
+                    let hash_key = hash_key.into();
+                    let tree_key = tree_key.into();
+
+                    match database.succ(&hash_key, &tree_key) {
+                        Ok(Some((key, value))) => println!("OK {} {} {}", hash_key, key, value),
+                        Ok(None) => println!("OK"),
+                        Err(error) => println!("ERR {}", error),
+                    }
+                }
+                Ok(Command::Pred { hash_key, tree_key }) => {
+                    let hash_key = hash_key.into();
+                    let tree_key = tree_key.into();
+
+                    match database.pred(&hash_key, &tree_key) {
+                        Ok(Some((key, value))) => println!("OK {} {} {}", hash_key, key, value),
+                        Ok(None) => println!("OK"),
+                        Err(error) => println!("ERR {}", error),
+                    }
+                }
                 Ok(Command::Count {}) => match database.count() {
                     Ok(count) => println!("OK {}", count),
                     Err(error) => println!("ERR {}", error),

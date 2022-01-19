@@ -34,6 +34,14 @@ pub enum Command<'a> {
         tree_start: &'a str,
         tree_end: &'a str,
     },
+    Succ {
+        hash_key: &'a str,
+        tree_key: &'a str,
+    },
+    Pred {
+        hash_key: &'a str,
+        tree_key: &'a str,
+    },
     Count {},
     Show {},
     Save {},
@@ -139,6 +147,40 @@ where
             tree_start,
             tree_end,
         },
+    )
+}
+
+fn parse_succ<'a, E>() -> impl Parser<&'a str, Command<'a>, E>
+where
+    E: ParseError<&'a str>,
+{
+    map(
+        tuple((
+            tag("SUCC"),
+            space1,
+            take_till(is_whitespace),
+            space1,
+            take_till(is_whitespace),
+            space0,
+        )),
+        |(_, _, hash_key, _, tree_key, _)| Command::Succ { hash_key, tree_key },
+    )
+}
+
+fn parse_pred<'a, E>() -> impl Parser<&'a str, Command<'a>, E>
+where
+    E: ParseError<&'a str>,
+{
+    map(
+        tuple((
+            tag("PRED"),
+            space1,
+            take_till(is_whitespace),
+            space1,
+            take_till(is_whitespace),
+            space0,
+        )),
+        |(_, _, hash_key, _, tree_key, _)| Command::Pred { hash_key, tree_key },
     )
 }
 

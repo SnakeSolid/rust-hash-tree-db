@@ -113,7 +113,7 @@ where
         }
     }
 
-    pub fn range<F>(&self, tree_first: &K, tree_last: &K, mut callback: F)
+    pub fn range<F>(&self, key_first: &K, key_last: &K, mut callback: F)
     where
         F: FnMut(&K, &V) -> bool,
     {
@@ -123,19 +123,44 @@ where
 
         let start_page = match self
             .pages
-            .partition_point(|page| page.range_start() <= tree_first)
+            .partition_point(|page| page.range_start() <= key_first)
         {
             0 => 0,
             index => index - 1,
         };
 
-        for page in &self.pages[start_page..self.pages.len()] {
-            if page.range_start() > tree_last {
+        for page in &self.pages[start_page..] {
+            if page.range_start() > key_last {
                 break;
             }
 
-            page.range(tree_first, tree_last, &mut callback);
+            if !page.range(key_first, key_last, &mut callback) {
+                break;
+            }
         }
+    }
+
+    pub fn succ(&self, key: &K) -> Option<(&K, &V)> {
+        if self.pages.is_empty() {
+            return None;
+        }
+
+        let start_page = match self.pages.partition_point(|page| page.range_start() <= key) {
+            0 => 0,
+            index => index - 1,
+        };
+
+        for page in &self.pages[start_page..] {
+            if let Some(entry) = page.succ(key) {
+                return Some(entry);
+            }
+        }
+
+        None
+    }
+
+    pub fn pred(&self, key: &K) -> Option<(&K, &V)> {
+        unimplemented!()
     }
 
     pub fn size(&self) -> usize {
