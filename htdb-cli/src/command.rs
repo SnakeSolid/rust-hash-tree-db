@@ -232,6 +232,8 @@ where
                 parse_contains(),
                 parse_delete(),
                 parse_range(),
+                parse_succ(),
+                parse_pred(),
                 parse_count(),
                 parse_show(),
                 parse_save(),

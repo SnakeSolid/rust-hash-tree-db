@@ -160,7 +160,22 @@ where
     }
 
     pub fn pred(&self, key: &K) -> Option<(&K, &V)> {
-        unimplemented!()
+        if self.pages.is_empty() {
+            return None;
+        }
+
+        let start_page = match self.pages.partition_point(|page| page.range_start() <= key) {
+            0 => 0,
+            index => index - 1,
+        };
+
+        for page in self.pages[..=start_page].iter().rev() {
+            if let Some(entry) = page.pred(key) {
+                return Some(entry);
+            }
+        }
+
+        None
     }
 
     pub fn size(&self) -> usize {
@@ -425,5 +440,75 @@ mod tests {
         });
 
         assert_eq!(vec![(2, 20), (3, 30), (4, 40)], result);
+    }
+
+    #[test]
+    fn succ_must_select_next_value() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+
+        assert_eq!(Some((&2, &20)), pages.succ(&1));
+    }
+
+    #[test]
+    fn succ_must_select_next_oage() {
+        let config = Rc::new(Config::default().set_max_page_size(3));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+        pages.insert(3, 30);
+        pages.insert(4, 40);
+
+        assert_eq!(Some((&3, &30)), pages.succ(&2));
+    }
+
+    #[test]
+    fn succ_must_select_none() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+
+        assert_eq!(None, pages.succ(&2));
+    }
+
+    #[test]
+    fn pred_must_select_next_value() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+
+        assert_eq!(Some((&1, &10)), pages.pred(&2));
+    }
+
+    #[test]
+    fn pred_must_select_next_oage() {
+        let config = Rc::new(Config::default().set_max_page_size(3));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+        pages.insert(3, 30);
+        pages.insert(4, 40);
+
+        assert_eq!(Some((&2, &20)), pages.pred(&3));
+    }
+
+    #[test]
+    fn pred_must_select_none() {
+        let config = Rc::new(Config::default().set_max_page_size(4));
+        let mut pages: Pages<usize, usize> = Pages::new(config);
+
+        pages.insert(1, 10);
+        pages.insert(2, 20);
+
+        assert_eq!(None, pages.pred(&1));
     }
 }

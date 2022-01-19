@@ -3,6 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
+use std::ops::Bound;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Page<K, V>
@@ -69,10 +70,6 @@ where
     where
         F: FnMut(&K, &V) -> bool,
     {
-        if self.tree.is_empty() {
-            return true;
-        }
-
         for (key, value) in self.tree.range(key_first..=key_last) {
             if !callback(key, value) {
                 return false;
@@ -83,11 +80,16 @@ where
     }
 
     pub fn succ(&self, key: &K) -> Option<(&K, &V)> {
-        unimplemented!()
+        self.tree
+            .range((Bound::Excluded(key), Bound::Unbounded))
+            .next()
     }
 
     pub fn pred(&self, key: &K) -> Option<(&K, &V)> {
-        unimplemented!()
+        self.tree
+            .range((Bound::Unbounded, Bound::Excluded(key)))
+            .rev()
+            .next()
     }
 
     pub fn size(&self) -> usize {
@@ -325,5 +327,25 @@ mod tests {
             })
         );
         assert_eq!(vec![(2, 20), (3, 30), (4, 40)], result);
+    }
+
+    #[test]
+    fn succ_must_select_next_value() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+
+        page.insert(1, 10);
+        page.insert(2, 20);
+
+        assert_eq!(Some((&2, &20)), page.succ(&1));
+    }
+
+    #[test]
+    fn succ_must_select_none() {
+        let mut page: Page<_, usize> = Page::from_range(10, 20);
+
+        page.insert(1, 10);
+        page.insert(2, 20);
+
+        assert_eq!(None, page.succ(&2));
     }
 }
