@@ -26,7 +26,7 @@ impl Config {
     }
 
     pub fn max_pages(&self) -> Option<usize> {
-        self.max_pages.clone()
+        self.max_pages
     }
 
     pub fn set_storage_path<P>(mut self, storage_path: P) -> Self

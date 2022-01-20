@@ -20,7 +20,7 @@ impl Options {
     }
 
     pub fn memory_pages(&self) -> Option<usize> {
-        self.memory_pages.clone()
+        self.memory_pages
     }
 
     pub fn storage_path(&self) -> &Path {

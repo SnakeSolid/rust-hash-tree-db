@@ -1,3 +1,6 @@
+#[macro_use]
+mod util;
+
 use htdb_sys::Config;
 use htdb_sys::Database;
 use jni::objects::JClass;
@@ -20,51 +23,6 @@ const METHOD_ENTRY_INIT: &str = "<init>";
 const METHOD_CALLBACL_ACCEPT: &str = "accept";
 const SIGNATURE_ENTRY_INIT: &str = "([B[B)V";
 const SIGNATURE_CALLBACL_ACCEPT: &str = "([B[B)Z";
-
-macro_rules! illegal_argument {
-    ($env:ident, $message:expr, $result:expr) => {{
-        if let Err(error) = $env.throw_new(ILLEGAL_ARGUMENT, $message) {
-            eprint!("{}", error);
-        }
-
-        return $result;
-    }};
-    ($env:ident, $predicate:expr, $message:expr, $result:expr) => {{
-        if $predicate {
-            if let Err(error) = $env.throw_new(ILLEGAL_ARGUMENT, $message) {
-                eprint!("{}", error);
-            }
-
-            return $result;
-        }
-    }};
-}
-
-macro_rules! database {
-    ($env:ident, $handle:ident, $result:expr) => {
-        match unsafe { ($handle as *mut JavaDatabase).as_mut() } {
-            Some(database) => database,
-            None => illegal_argument!($env, "Invalid database handle", $result),
-        }
-    };
-}
-
-macro_rules! unwrap {
-    ($env:ident, $expression:expr, $result:expr) => {
-        match $expression {
-            Ok(value) => value,
-            Err(error) => {
-                let message = format!("{}", error);
-
-                if let Err(error) = $env.throw(message) {
-                    eprint!("{}", error);
-                }
-
-                return $result;
-            }
-        }
-    };
-}
 
 type JavaDatabase = Database<Vec<u8>, Vec<u8>, Vec<u8>>;
 
@@ -110,18 +68,13 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_get(
     partition: jbyteArray,
     key: jbyteArray,
 ) -> jbyteArray {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        null_mut()
-    );
-    illegal_argument!(
-        env,
-        key.is_null(),
-        "Parameter `key` must not be null.",
-        null_mut()
-    );
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", null_mut());
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", null_mut());
+    }
 
     let database = database!(env, handle, null_mut());
     let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
@@ -143,19 +96,17 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_put(
     key: jbyteArray,
     value: jbyteArray,
 ) -> jboolean {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        0
-    );
-    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
-    illegal_argument!(
-        env,
-        value.is_null(),
-        "Parameter `value` must not be null.",
-        0
-    );
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", 0);
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", 0);
+    }
+
+    if value.is_null() {
+        illegal_argument!(env, "Parameter `value` must not be null.", 0);
+    }
 
     let database = database!(env, handle, 0);
     let partition = unwrap!(env, env.convert_byte_array(partition), 0);
@@ -173,13 +124,13 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_contains(
     partition: jbyteArray,
     key: jbyteArray,
 ) -> jboolean {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        0
-    );
-    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", 0);
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", 0);
+    }
 
     let database = database!(env, handle, 0);
     let partition = unwrap!(env, env.convert_byte_array(partition), 0);
@@ -196,13 +147,13 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_delete(
     partition: jbyteArray,
     key: jbyteArray,
 ) -> jboolean {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        0
-    );
-    illegal_argument!(env, key.is_null(), "Parameter `key` must not be null.", 0);
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", 0);
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", 0);
+    }
 
     let database = database!(env, handle, 0);
     let partition = unwrap!(env, env.convert_byte_array(partition), 0);
@@ -221,40 +172,30 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
     key_last: jbyteArray,
     callback: jobject,
 ) {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        ()
-    );
-    illegal_argument!(
-        env,
-        key_first.is_null(),
-        "Parameter `key_first` must not be null.",
-        ()
-    );
-    illegal_argument!(
-        env,
-        key_last.is_null(),
-        "Parameter `key_last` must not be null.",
-        ()
-    );
-    illegal_argument!(
-        env,
-        callback.is_null(),
-        "Parameter `callback` must not be null.",
-        ()
-    );
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.");
+    }
 
-    let database = database!(env, handle, ());
-    let partition = unwrap!(env, env.convert_byte_array(partition), ());
-    let key_first = unwrap!(env, env.convert_byte_array(key_first), ());
-    let key_last = unwrap!(env, env.convert_byte_array(key_last), ());
+    if key_first.is_null() {
+        illegal_argument!(env, "Parameter `key_first` must not be null.");
+    }
+
+    if key_last.is_null() {
+        illegal_argument!(env, "Parameter `key_last` must not be null.");
+    }
+
+    if callback.is_null() {
+        illegal_argument!(env, "Parameter `callback` must not be null.");
+    }
+
+    let database = database!(env, handle);
+    let partition = unwrap!(env, env.convert_byte_array(partition));
+    let key_first = unwrap!(env, env.convert_byte_array(key_first));
+    let key_last = unwrap!(env, env.convert_byte_array(key_last));
     let callback = JObject::from(callback);
     let method_accept = unwrap!(
         env,
-        env.get_method_id(callback, METHOD_CALLBACL_ACCEPT, SIGNATURE_CALLBACL_ACCEPT),
-        ()
+        env.get_method_id(callback, METHOD_CALLBACL_ACCEPT, SIGNATURE_CALLBACL_ACCEPT)
     );
 
     unwrap!(
@@ -274,8 +215,7 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_range(
             );
 
             !unwrap!(env, env.exception_check(), false) && unwrap!(env, result.z(), false)
-        }),
-        ()
+        })
     );
 }
 
@@ -287,18 +227,13 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_succ(
     partition: jbyteArray,
     key: jbyteArray,
 ) -> jobject {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        null_mut()
-    );
-    illegal_argument!(
-        env,
-        key.is_null(),
-        "Parameter `key` must not be null.",
-        null_mut()
-    );
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", null_mut());
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", null_mut());
+    }
 
     let database = database!(env, handle, null_mut());
     let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
@@ -336,18 +271,13 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_pred(
     partition: jbyteArray,
     key: jbyteArray,
 ) -> jobject {
-    illegal_argument!(
-        env,
-        partition.is_null(),
-        "Parameter `partition` must not be null.",
-        null_mut()
-    );
-    illegal_argument!(
-        env,
-        key.is_null(),
-        "Parameter `key` must not be null.",
-        null_mut()
-    );
+    if partition.is_null() {
+        illegal_argument!(env, "Parameter `partition` must not be null.", null_mut());
+    }
+
+    if key.is_null() {
+        illegal_argument!(env, "Parameter `key` must not be null.", null_mut());
+    }
 
     let database = database!(env, handle, null_mut());
     let partition = unwrap!(env, env.convert_byte_array(partition), null_mut());
@@ -394,9 +324,9 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_save(
     _class: JClass,
     handle: jlong,
 ) {
-    let database = database!(env, handle, ());
+    let database = database!(env, handle);
 
-    unwrap!(env, database.save(), ());
+    unwrap!(env, database.save());
 }
 
 #[no_mangle]
@@ -405,9 +335,9 @@ pub extern "system" fn Java_ru_snake_htdb_HTDBNative_load(
     _class: JClass,
     handle: jlong,
 ) {
-    let database = database!(env, handle, ());
+    let database = database!(env, handle);
 
-    unwrap!(env, database.load(), ());
+    unwrap!(env, database.load());
 }
 
 #[no_mangle]

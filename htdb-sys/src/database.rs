@@ -91,7 +91,9 @@ where
         }
 
         if let Some(pages) = self.map.get(hash_key) {
-            Ok(pages.range(tree_first, tree_last, callback))
+            pages.range(tree_first, tree_last, callback);
+
+            Ok(())
         } else {
             Ok(())
         }

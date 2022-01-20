@@ -100,7 +100,7 @@ where
         // TODO: Replace with get root.
         let middle = self.tree.len() / 2;
 
-        if let Some(key) = self.tree.keys().skip(middle).next().cloned() {
+        if let Some(key) = self.tree.keys().nth(middle).cloned() {
             let tree = self.tree.split_off(&key);
             let next = Page {
                 range_start: key,

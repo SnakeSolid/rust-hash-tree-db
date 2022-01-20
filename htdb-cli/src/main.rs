@@ -46,7 +46,7 @@ fn main() {
                 continue;
             }
 
-            match Command::parse(&input) {
+            match Command::parse(input) {
                 Ok(Command::Get { hash_key, tree_key }) => {
                     let hash_key = hash_key.into();
                     let tree_key = tree_key.into();

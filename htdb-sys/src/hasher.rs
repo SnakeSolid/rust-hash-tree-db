@@ -46,7 +46,7 @@ impl Hasher for TrivialHasher {
     }
 
     fn write_u128(&mut self, i: u128) {
-        self.hash ^= (i >> 0) as u64 ^ (i >> 64) as u64;
+        self.hash ^= i as u64 ^ (i >> 64) as u64;
     }
 
     fn write_usize(&mut self, i: usize) {
@@ -70,7 +70,7 @@ impl Hasher for TrivialHasher {
     }
 
     fn write_i128(&mut self, i: i128) {
-        self.hash ^= (i >> 0) as u64 ^ (i >> 64) as u64;
+        self.hash ^= i as u64 ^ (i >> 64) as u64;
     }
 
     fn write_isize(&mut self, i: isize) {
